@@ -1,8 +1,6 @@
 name: Update Eagle Utils
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Daily update
   workflow_dispatch:
 
 jobs:
@@ -11,42 +9,10 @@ jobs:
     steps:
       - name: Checkout current repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Set up temporary directory
-        run: mkdir -p ./eagle-utils-tmp
-
-      - name: Clone eagle-utils repository
+      - name: Update utils with Python script
         run: |
-          git clone --depth 1 --branch $(jq -r '.branch' .github/settings/eagle-utils-config.json) \
-            $(jq -r '.src' .github/settings/eagle-utils-config.json) ./eagle-utils-tmp
-
-      - name: Sync utils directory
-        run: |
-          # Check for mutual exclusivity of include/exclude
-          INCLUDE_COUNT=$(jq -r '.include | length' .github/settings/eagle-utils-config.json)
-          EXCLUDE_COUNT=$(jq -r '.exclude | length' .github/settings/eagle-utils-config.json)
-          if [ $INCLUDE_COUNT -gt 0 ] && [ $EXCLUDE_COUNT -gt 0 ]; then
-            echo "Error: Both include and exclude patterns are present in config"
-            exit 1
-          fi
-
-          # Build rsync arguments based on config
-          RSYNC_ARGS=()
-          if [ $INCLUDE_COUNT -gt 0 ]; then
-            while IFS= read -r pattern; do
-              RSYNC_ARGS+=("--include=$pattern")
-            done < <(jq -r '.include[]' .github/settings/eagle-utils-config.json)
-            RSYNC_ARGS+=("--exclude=*")
-          else
-            while IFS= read -r pattern; do
-              RSYNC_ARGS+=("--exclude=$pattern")
-            done < <(jq -r '.exclude[]' .github/settings/eagle-utils-config.json)
-          fi
-
-          # Sync files with appropriate patterns
-          rsync -av --delete "${RSYNC_ARGS[@]}" ./eagle-utils-tmp/utils/ ./utils/
+          python3 .github/scripts/update_utils.py
 
       - name: Commit and push changes
         run: |
