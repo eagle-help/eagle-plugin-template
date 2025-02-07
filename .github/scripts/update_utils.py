@@ -69,6 +69,8 @@ if __name__ == "__main__":
     print(f"files_to_update: {files_to_update}")
 
     # Copy files to utils directory
+    os.makedirs("utils", exist_ok=True)
+
     for file in files_to_update:
         shutil.copy(
             os.path.join(temp_dir, file),
