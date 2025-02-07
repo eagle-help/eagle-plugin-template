@@ -25,8 +25,12 @@ jobs:
       - name: Get changed files
         id: changed-files
         run: |
-          FILES=$(git diff --name-only template/main -- .github ':!.github/settings' | grep -vE "${{ inputs.skip_pattern }}")
-          echo "files=$FILES" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          FILES=$(git diff --name-only template/main -- .github ':!.github/settings')
+          if [ -n "${{ inputs.skip_pattern }}" ]; then
+            FILES=$(echo "$FILES" | grep -vE "${{ inputs.skip_pattern }}")
+          fi
+          echo "files=${FILES}" >> $GITHUB_OUTPUT
 
       - name: Apply updates
         if: steps.changed-files.outputs.files
