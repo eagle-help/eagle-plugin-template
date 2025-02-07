@@ -1,0 +1,28 @@
+name: Eagle Helper Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      args:
+        description: "Command and arguments for eagle-helper (e.g.: 'init myplugin --platform=win')"
+        default: |
+            init --name myplugin --platform=win add-window --url=src/custom.html
+        required: true
+
+jobs:
+  run-command:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+
+      - name: Install eagle-helper
+        run: pip install eagle-helper
+
+      - name: Run eagle-helper command
+        run: eagle-helper ${{ github.event.inputs.args }}
