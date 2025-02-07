@@ -13,30 +13,38 @@ jobs:
     steps:
       - name: Checkout current repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
-      - name: Add template remote
+      - name: Configure git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Clone template repo
         run: |
           REPO_URL=$(jq -r '.src' .github/settings/repo-config.json)
-          git remote add template "$REPO_URL"
+          git clone "$REPO_URL" template-repo --depth 1
 
-      - name: Fetch template updates
-        run: git fetch template main
-
-      - name: Get changed files
-        id: changed-files
+      - name: Copy relevant files
         run: |
-          set -euo pipefail
-          FILES=$(git diff --name-only template/main -- .github ':!.github/settings')
+          # Copy .github directory excluding settings
+          rsync -av --delete template-repo/.github/ .github/ --exclude=settings
+          
+          # Clean up template files
+          rm -rf template-repo
+
+          # Restore skipped files if pattern provided
           if [ -n "${{ inputs.skip_pattern }}" ]; then
-            FILES=$(echo "$FILES" | grep -vE "${{ inputs.skip_pattern }}")
+            git restore $(git ls-files | grep -E "${{ inputs.skip_pattern }}")
           fi
-          echo "files=${FILES}" >> $GITHUB_OUTPUT
 
-      - name: Apply updates
-        if: steps.changed-files.outputs.files
+      - name: Commit and push changes
         run: |
-          git reset --hard template/main
-          git checkout template/main -- ${{ steps.changed-files.outputs.files }}
           git add .
-          git commit -m "chore: Update template files"$([ "${{ inputs.skip_pattern }}" ] && echo " (skipped ${{ inputs.skip_pattern }})")
-          git push
+          if ! git diff --quiet; then
+            git commit -m "chore: Update template files$([ "${{ inputs.skip_pattern }}" ] && echo " (skipped ${{ inputs.skip_pattern }})")"
+            git push
+          else
+            echo "No changes to commit"
+          fi
