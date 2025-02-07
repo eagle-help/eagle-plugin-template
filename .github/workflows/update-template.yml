@@ -29,22 +29,36 @@ jobs:
       - name: Copy relevant files
         run: |
           # Copy .github directory excluding settings
+          echo "🔄 Syncing files from template..."
           rsync -av --delete template-repo/.github/ .github/ --exclude=settings
           
+          echo "📂 Current directory structure:"
+          ls -al .github
+          
+          echo "🔍 Changed files detection:"
+          git status --porcelain
+
           # Clean up template files
           rm -rf template-repo
 
           # Restore skipped files if pattern provided
           if [ -n "${{ inputs.skip_pattern }}" ]; then
+            echo "⏩ Restoring files matching pattern: ${{ inputs.skip_pattern }}"
             git restore $(git ls-files | grep -E "${{ inputs.skip_pattern }}")
           fi
 
       - name: Commit and push changes
         run: |
+          echo "💾 Staging changes..."
           git add .
+          
+          echo "📄 Final changes to commit:"
+          git status --porcelain
+          
           if ! git diff --quiet; then
             git commit -m "chore: Update template files$([ "${{ inputs.skip_pattern }}" ] && echo " (skipped ${{ inputs.skip_pattern }})")"
             git push
+            echo "✅ Successfully pushed changes"
           else
-            echo "No changes to commit"
+            echo "🟢 No changes to commit - everything up to date"
           fi
