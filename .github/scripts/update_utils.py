@@ -27,7 +27,7 @@ if __name__ == "__main__":
         src, temp_dir
     ], check=True)
     
-    utils_list = os.listdir(temp_dir)
+    utils_list = [file for file in os.listdir(temp_dir) if os.path.isfile(os.path.join(temp_dir, file)) and file.endswith(".js")]
 
     # Check for include/exclude patterns
     include_patterns = config.get("include", [])
