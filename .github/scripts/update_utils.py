@@ -23,7 +23,7 @@ if __name__ == "__main__":
     
     # Clone repository with config settings
     subprocess.run([
-        "git", "clone", "--depth", "1", "--no-checkout","--branch", branch,
+        "git", "clone", "--depth", "1","--branch", branch,
         src, temp_dir
     ], check=True)
     

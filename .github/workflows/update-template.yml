@@ -1,0 +1,36 @@
+name: Update Template Files
+on:
+  workflow_dispatch:
+    inputs:
+      skip_pattern:
+        description: 'Regex pattern to skip files (e.g.: ".*\.md$")'
+        required: false
+        default: ''
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+
+      - name: Add template remote
+        run: git remote add template ${{ github.workspace }}/.github/settings/repo-config.json | jq -r '.src')
+        
+      - name: Fetch template updates
+        run: git fetch template main
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          FILES=$(git diff --name-only template/main -- .github ':!.github/settings' | grep -vE "${{ inputs.skip_pattern }}")
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+      - name: Apply updates
+        if: steps.changed-files.outputs.files
+        run: |
+          git reset --hard template/main
+          git checkout template/main -- ${{ steps.changed-files.outputs.files }}
+          git add .
+          git commit -m "chore: Update template files"$([ "${{ inputs.skip_pattern }}" ] && echo " (skipped ${{ inputs.skip_pattern }})")
+          git push
