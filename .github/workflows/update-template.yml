@@ -43,6 +43,12 @@ jobs:
           echo "🔍 Changed files detection:"
           git status --porcelain
 
+          # Restore workflow files if using default token
+          if [ "${{ !secrets.GHTOKEN }}" = "true" ]; then
+            echo "⏩ Restoring workflow files (using default token)"
+            git restore .github/workflows/*
+          fi
+
           # Clean up template files
           rm -rf template-repo
 
@@ -63,7 +69,7 @@ jobs:
           # Check if there are staged changes
           if [ -n "$(git status --porcelain)" ]; then
             git commit -m "chore: Update template files$([ "${{ inputs.skip_pattern }}" ] && echo " (skipped ${{ inputs.skip_pattern }})")"
-            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+            git push https://x-access-token:${{ secrets.GHTOKEN || secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git --force-with-lease ":!.github/workflows/*"
             echo "✅ Successfully pushed changes"
           else
             echo "🟢 No changes to commit - everything up to date"
