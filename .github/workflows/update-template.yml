@@ -14,7 +14,8 @@ jobs:
       - name: Checkout current repo
         uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Configure git
         run: |
@@ -55,9 +56,10 @@ jobs:
           echo "📄 Final changes to commit:"
           git status --porcelain
           
-          if ! git diff --quiet; then
+          # Check if there are staged changes
+          if [ -n "$(git status --porcelain)" ]; then
             git commit -m "chore: Update template files$([ "${{ inputs.skip_pattern }}" ] && echo " (skipped ${{ inputs.skip_pattern }})")"
-            git push
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
             echo "✅ Successfully pushed changes"
           else
             echo "🟢 No changes to commit - everything up to date"
